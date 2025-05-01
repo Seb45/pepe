@@ -5,6 +5,7 @@ from datetime import datetime
 import os
 import google.generativeai as genai
 import tempfile # Para manejar archivos subidos temporalmente
+import pandas as pd
 
 # --- Langchain & Google Imports ---
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
