@@ -151,7 +151,7 @@ def get_llm():
         return None
 
 
-def load_documents(uploaded_files):
+def load_documents2(uploaded_files):
     """Carga documentos desde archivos subidos (PDF, DOCX) - Prioriza Unstructured."""
     documents = []
     print(f"Cargando {len(uploaded_files)} archivos...")
@@ -225,7 +225,7 @@ def load_documents(uploaded_files):
     print(f"Total de documentos cargados: {len(documents)}")
     return documents
 
-def load_documents1(uploaded_files):
+def load_documents(uploaded_files):
     """Carga documentos desde archivos subidos (PDF, DOCX)."""
     documents = []
     print(f"Cargando {len(uploaded_files)} archivos...")
