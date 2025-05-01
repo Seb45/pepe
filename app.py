@@ -387,7 +387,7 @@ def get_qa_chain(_vectorstore): # Pasar vectorstore como argumento para cache
         llm=llm,
         chain_type="stuff", # Probar este primero
         retriever=retriever,
-        return_source_documents=True, # Opcional: para ver qué chunks usó
+        return_source_documents=False, # Opcional: para ver qué chunks usó
         chain_type_kwargs={"prompt": QA_PROMPT}
     )
     print("Cadena de QA creada.")
@@ -463,7 +463,7 @@ def admin_page():
 
     uploaded_files = st.file_uploader(
         "Seleccionar documentos...",
-        type=["pdf", "docx"],
+        type=["pdf", "docx", "pptx", "xlsx", "txt"],
         accept_multiple_files=True,
         key="file_uploader" # Key para manejar estado
     )
