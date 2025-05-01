@@ -691,13 +691,9 @@ def chat_page():
         with st.spinner("Pensando..."):
             try:
                 response = qa_chain.invoke({"query": prompt})
-                # print("Respuesta completa del chain:", response) # Para depuración
-
-                bot_response = response.get('result', "Lo siento, no pude procesar tu consulta.")
-
-		# Registrar en Log
+		# print("Respuesta completa del chain:", response) # Para depuración
+		bot_response = response.get('result', "Lo siento, no pude procesar tu consulta.")
 		add_log(st.session_state.dni, prompt, bot_response)
-		    
 		# Opcional: Mostrar fuentes si se retornaron
                 source_documents = response.get('source_documents')
                 if source_documents:
