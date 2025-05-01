@@ -151,6 +151,137 @@ def get_llm():
         return None
 
 
+def fetch_logs_as_dataframe():
+    """Lee la tabla de logs y la devuelve como un DataFrame de Pandas."""
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        # Usar parse_dates para intentar convertir la columna timestamp
+        df = pd.read_sql_query("SELECT dni, timestamp, query, response FROM logs ORDER BY timestamp DESC",
+                               conn,
+                               parse_dates=['timestamp'])
+        conn.close()
+
+        # --- Manejo de Zona Horaria (IMPORTANTE) ---
+        # SQLite no maneja zonas horarias nativamente. Asumiremos que se guardó en UTC
+        # o como texto sin zona horaria. Vamos a convertirlo a la hora de Buenos Aires.
+        if not df.empty and pd.api.types.is_datetime64_any_dtype(df['timestamp']):
+            if df['timestamp'].dt.tz is None:
+                print("Log timestamp es naive. Asumiendo UTC y convirtiendo a Buenos_Aires.")
+                # Localiza a UTC y luego convierte a la zona deseada
+                try:
+                    df['timestamp'] = df['timestamp'].dt.tz_localize('UTC', ambiguous='infer').dt.tz_convert('America/Argentina/Buenos_Aires')
+                except Exception as tz_err:
+                     print(f"Error en conversión de zona horaria: {tz_err}. Se mostrará la hora original.")
+                     # Podrías querer manejar esto de otra forma si la localización falla
+            else:
+                print("Log timestamp ya tiene zona horaria. Convirtiendo a Buenos_Aires.")
+                # Si ya tiene zona horaria (ej. UTC), simplemente convierte
+                try:
+                    df['timestamp'] = df['timestamp'].dt.tz_convert('America/Argentina/Buenos_Aires')
+                except Exception as tz_err:
+                     print(f"Error en conversión de zona horaria: {tz_err}. Se mostrará la hora original.")
+
+        else:
+             # Si la columna no es datetime (error en parse_dates o tabla vacía), intentar conversión manual
+             try:
+                df['timestamp'] = pd.to_datetime(df['timestamp'])
+                # Repetir lógica de zona horaria si la conversión manual funciona
+                if df['timestamp'].dt.tz is None:
+                     df['timestamp'] = df['timestamp'].dt.tz_localize('UTC', ambiguous='infer').dt.tz_convert('America/Argentina/Buenos_Aires')
+                else:
+                     df['timestamp'] = df['timestamp'].dt.tz_convert('America/Argentina/Buenos_Aires')
+             except Exception as format_err:
+                  print(f"No se pudo convertir 'timestamp' a datetime: {format_err}")
+                  # Dejar la columna como está si falla la conversión
+
+        return df
+    except sqlite3.Error as e_sql:
+         st.error(f"Error de Base de Datos al leer los logs: {e_sql}")
+         return pd.DataFrame() # Devuelve DataFrame vacío en caso de error
+    except Exception as e:
+        st.error(f"Error general al leer o procesar los logs: {e}")
+        import traceback
+        print("--- TRACEBACK ERROR LEYENDO LOGS ---")
+        traceback.print_exc()
+        print("------------------------------------")
+        return pd.DataFrame()
+
+
+def reports_page():
+    """Muestra la página de informes con estadísticas de uso."""
+    st.header("Informes de Uso del Chatbot")
+
+    df_logs = fetch_logs_as_dataframe()
+
+    if df_logs.empty:
+        st.warning("Aún no hay datos de logs para mostrar.")
+        return
+
+    st.success(f"Total de interacciones registradas: {len(df_logs)}")
+
+    # --- Preparación de Datos ---
+    # Necesitamos columnas separadas para fecha y hora para agrupar
+    try:
+        # Asegurarse de que timestamp sea datetime antes de extraer
+        if not pd.api.types.is_datetime64_any_dtype(df_logs['timestamp']):
+             df_logs['timestamp'] = pd.to_datetime(df_logs['timestamp'], errors='coerce') # Convertir, poner NaT si falla
+
+        # Eliminar filas donde la conversión falló
+        df_logs.dropna(subset=['timestamp'], inplace=True)
+
+        if df_logs.empty:
+             st.error("No se pudieron procesar las fechas de los logs.")
+             return
+
+        df_logs['fecha'] = df_logs['timestamp'].dt.date
+        df_logs['hora'] = df_logs['timestamp'].dt.hour
+        df_logs['dia_semana'] = df_logs['timestamp'].dt.day_name() # Opcional: día de la semana
+    except Exception as e:
+        st.error(f"Error al extraer fecha/hora de los logs: {e}")
+        st.subheader("Detalle Completo (Error procesando fechas)")
+        st.dataframe(df_logs)
+        return
+
+    # --- Agregaciones y Visualizaciones ---
+
+    st.subheader("Interacciones por Día")
+    daily_counts = df_logs.groupby('fecha').size().reset_index(name='Consultas')
+    st.dataframe(daily_counts.sort_values(by='fecha', ascending=False), use_container_width=True)
+    if not daily_counts.empty:
+        try:
+            # Convertir fecha a string para el gráfico para evitar problemas de tipo
+            daily_counts_chart = daily_counts.copy()
+            daily_counts_chart['fecha'] = pd.to_datetime(daily_counts_chart['fecha']).dt.strftime('%Y-%m-%d')
+            st.bar_chart(daily_counts_chart.set_index('fecha'), y='Consultas')
+        except Exception as chart_err:
+             print(f"Error generando gráfico diario: {chart_err}")
+
+
+    st.subheader("Interacciones por Hora del Día")
+    hourly_counts = df_logs.groupby('hora').size().reset_index(name='Consultas')
+    # Asegurar que todas las horas 0-23 estén presentes para un gráfico completo
+    all_hours = pd.DataFrame({'hora': range(24)})
+    hourly_counts = pd.merge(all_hours, hourly_counts, on='hora', how='left').fillna(0)
+    hourly_counts['Consultas'] = hourly_counts['Consultas'].astype(int) # Convertir a entero
+    st.dataframe(hourly_counts, use_container_width=True)
+    if not hourly_counts.empty:
+        st.bar_chart(hourly_counts.set_index('hora'))
+
+
+    st.subheader("Interacciones por DNI (Usuario)")
+    dni_counts = df_logs.groupby('dni').size().reset_index(name='Consultas')
+    st.dataframe(dni_counts.sort_values(by='Consultas', ascending=False), use_container_width=True)
+
+
+    # --- Detalle Completo ---
+    st.subheader("Detalle Completo de Logs")
+    with st.expander("Mostrar / Ocultar Todas las Interacciones"):
+        # Mostrar columnas relevantes y formatear timestamp
+        df_display = df_logs.copy()
+        # Formatear la columna de timestamp para mejor legibilidad
+        df_display['timestamp'] = df_display['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S %Z')
+        st.dataframe(df_display[['timestamp', 'dni', 'query', 'response', 'fecha', 'hora']].sort_values(by='timestamp', ascending=False), use_container_width=True)
+        
 def load_documents2(uploaded_files):
     """Carga documentos desde archivos subidos (PDF, DOCX) - Prioriza Unstructured."""
     documents = []
@@ -589,7 +720,7 @@ def main_app():
     """Muestra la aplicación principal una vez logueado."""
     st.sidebar.header(f"Usuario: {st.session_state.dni}")
 
-    menu = ["Chat", "Cambiar Contraseña", "Administrar Documentos"]
+    menu = ["Chat", "Cambiar Contraseña", "Administrar Documentos", "Informes Utilizacion"]
     # Usar el índice actual si existe, sino default a 0 (Chat)
     current_page_index = menu.index(st.session_state.page) if st.session_state.page in menu else 0
     st.session_state.page = st.sidebar.radio("Menú", menu, index=current_page_index)
@@ -613,6 +744,8 @@ def main_app():
         change_password_page()
     elif st.session_state.page == "Administrar Documentos":
         admin_page()
+    elif st.session_state.page == "Informes Utilizacion":
+        reports_page()
 
 
 # --- Ejecución ---
