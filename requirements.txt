@@ -9,5 +9,6 @@ sentence-transformers
 tiktoken
 Docx2txt
 langchain-community
+langchain-core
 
 # Añadido Docx2txt explícitamente
