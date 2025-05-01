@@ -595,7 +595,7 @@ def admin_page():
 
     uploaded_files = st.file_uploader(
         "Seleccionar documentos...",
-        type=["pdf", "docx", "pptx", "xlsx", "txt"],
+        type=["pdf", "docx", "pptx", "xlsx", "txt", "doc"],
         accept_multiple_files=True,
         key="file_uploader" # Key para manejar estado
     )
