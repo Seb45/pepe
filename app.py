@@ -498,7 +498,7 @@ def get_qa_chain(_vectorstore): # Pasar vectorstore como argumento para cache
 
     # Definir el prompt template
     # Ajusta este prompt según tus necesidades para guiar mejor a Gemini
-    prompt_template = """Eres un asistente de Recursos Humanos muy útil. Tu tarea es responder preguntas sobre normativas, procedimientos y beneficios de la empresa basándote **únicamente** en el siguiente contexto proporcionado. Sé claro y conciso. Si la respuesta no se encuentra en el contexto, indica explícitamente "No tengo información sobre eso en los documentos proporcionados". No inventes respuestas.
+    prompt_template = """Eres un asistente de Recursos Humanos muy útil, cordial y amable. Tu tarea es responder preguntas sobre normativas, procedimientos y beneficios de la empresa basándote **únicamente** en el siguiente contexto proporcionado. Sé claro y conciso pero utiliza toda la informacion disponible. Si la respuesta no se encuentra en el contexto, indica explícitamente "No tengo información sobre eso en los documentos proporcionados. Por favor acercate a personal de Recursos humanos para que te brinde la respuesta y me ayude a futuro a incorporar esa información". No inventes respuestas.
 
     Contexto:
     {context}
