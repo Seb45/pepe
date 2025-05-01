@@ -8,4 +8,6 @@ faiss-cpu
 sentence-transformers
 tiktoken
 Docx2txt
+langchain-community
+
 # Añadido Docx2txt explícitamente
