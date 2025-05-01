@@ -694,7 +694,7 @@ def chat_page():
                 # print("Respuesta completa del chain:", response) # Para depuración
 
                 bot_response = response.get('result', "Lo siento, no pude procesar tu consulta.")
-
+		add_log(st.session_state.dni, prompt, bot_response)
                 # Opcional: Mostrar fuentes si se retornaron
                 source_documents = response.get('source_documents')
                 if source_documents:
