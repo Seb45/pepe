@@ -10,5 +10,6 @@ tiktoken
 Docx2txt
 langchain-community
 langchain-core
+unstructured
 
 # Añadido Docx2txt explícitamente
