@@ -145,7 +145,7 @@ def get_llm():
          return None
     try:
         # Ajusta temperature y top_p según necesites
-        return ChatGoogleGenerativeAI(model="gemini-2.0-flash-latest", google_api_key=GOOGLE_API_KEY,
+        return ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=GOOGLE_API_KEY,
                                       temperature=0.2, top_p=0.5)
     except Exception as e:
         st.error(f"Error al cargar el LLM Gemini: {e}")
