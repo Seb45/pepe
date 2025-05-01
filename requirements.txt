@@ -1,0 +1,11 @@
+streamlit
+langchain
+langchain-google-genai
+google-generativeai
+pypdf
+python-docx
+faiss-cpu
+sentence-transformers
+tiktoken
+Docx2txt
+# Añadido Docx2txt explícitamente
